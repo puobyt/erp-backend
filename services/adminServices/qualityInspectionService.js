@@ -17,18 +17,21 @@ qualityInspectionService.fetchQualityInspection = async (query = {}) => {
     const productNames = await ProductionOrderCreationOutput.aggregate([
       {
         $group: {
-          _id: { productName: "$productName", batchNumberforOutput: "$batchNumberforOutput" }
-        }
+          _id: {
+            productName: "$productName",
+            batchNumberforOutput: "$batchNumberforOutput",
+          },
+        },
       },
       {
         $project: {
           _id: 0,
           productName: "$_id.productName",
-          batchNumber: "$_id.batchNumberforOutput"
-        }
-      }
+          batchNumber: "$_id.batchNumberforOutput",
+        },
+      },
     ]);
-    
+
     return {
       status: 200,
       data: data,
@@ -47,7 +50,14 @@ qualityInspectionService.fetchQualityInspection = async (query = {}) => {
 
 qualityInspectionService.newQualityInspection = async (inspectionData) => {
   try {
-    const { inspectionNumber, productName, inspectionResults, date, batchNumber, quantity } = inspectionData;
+    const {
+      inspectionNumber,
+      productName,
+      inspectionResults,
+      date,
+      batchNumber,
+      quantity,
+    } = inspectionData;
 
     const existingInspectionNumber = await FinalQualityInspection.findOne({
       inspectionNumber,
@@ -153,9 +163,18 @@ qualityInspectionService.newQualityInspection = async (inspectionData) => {
           };
         }
 
-        const vendorData = await PurchaseOrderCreation.findOne({
-          materialName: materialsList,
-        });
+        let vendorData;
+        if (vendorData) {
+          vendorData = await PurchaseOrderCreation.findOne({
+            materialName: materialsList,
+          });
+        } else {
+          vendorData = await PurchaseOrderCreation.findOne({
+            materials: { $elemMatch: { materialName: { $in: materialsList } } },
+          });
+        }
+        console.log("vendor", vendorData);
+        console.log("material", materialsList);
         if (!vendorData) {
           return {
             status: 409,
@@ -172,7 +191,7 @@ qualityInspectionService.newQualityInspection = async (inspectionData) => {
         });
       }
       const processOrder = await ProcessOrder.findOne({
-        productName
+        productName,
       });
       if (!processOrder) {
         return {
@@ -191,11 +210,14 @@ qualityInspectionService.newQualityInspection = async (inspectionData) => {
 
       function generateMaterialCode(finishedGoodsName) {
         // Split the finishedGoodsName into words
-        const nameParts = finishedGoodsName.split(' ');
+        const nameParts = finishedGoodsName.split(" ");
 
         // Get the first part of the name to form the material code
         const firstWord = nameParts[0].toUpperCase().slice(0, 3); // First three letters of the first word
-        const materialCode = firstWord + ' ' + (Math.floor(Math.random() * 99) + 1).toString().padStart(2, '0'); // Random two-digit number
+        const materialCode =
+          firstWord +
+          " " +
+          (Math.floor(Math.random() * 99) + 1).toString().padStart(2, "0"); // Random two-digit number
 
         return materialCode;
       }
@@ -220,7 +242,7 @@ qualityInspectionService.newQualityInspection = async (inspectionData) => {
       inspectionResults,
       date,
       batchNumber,
-      quantity
+      quantity,
     });
 
     await newData.save();
@@ -253,7 +275,7 @@ qualityInspectionService.editQualityInspection = async (
       inspectionResults,
       date,
       batchNumber,
-      quantity
+      quantity,
     } = qualityInpectionData;
 
     if (adminAuthPassword !== authPassword) {
@@ -284,7 +306,6 @@ qualityInspectionService.editQualityInspection = async (
         message: "Batch Number already exists",
       };
     }
-
 
     const existing = await FinalQualityInspection.findOne({
       $and: [
@@ -336,9 +357,12 @@ qualityInspectionService.editQualityInspection = async (
       finishedGoodsName: productName,
     });
     if (inspectionResults === "Accepted") {
-      const rework = await reworkService.fetchRework({ batchNumber: batchNumber, materialName: productName })
+      const rework = await reworkService.fetchRework({
+        batchNumber: batchNumber,
+        materialName: productName,
+      });
       if (rework.data.length > 0) {
-        reworkService.removeRework(rework.data[0]._id)
+        reworkService.removeRework(rework.data[0]._id);
       }
       if (!finishedGoodsExist) {
         const productionOrderCreationOutput =
@@ -366,7 +390,7 @@ qualityInspectionService.editQualityInspection = async (
           inspectionResults,
           date,
           batchNumber,
-          quantity
+          quantity,
         },
         {
           new: true,
