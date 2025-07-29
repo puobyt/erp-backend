@@ -28,13 +28,12 @@ app.use(rateLimit({
   windowMs: 15 * 60 * 1000, 
   max: 100
 }));
-app.use(
-  cors({
-    origin: "*", 
-    methods: "GET,POST,PUT,DELETE", 
-    allowedHeaders: "Content-Type,Authorization", 
-  })
-);
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://erp-frontend-t79m-o8z5negkk-paul-bobys-projects.vercel.app'
+  ]
+}));
 app.use(express.static(path.join(__dirname, "public")));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
